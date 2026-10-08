@@ -13,14 +13,19 @@ bool estadoSensorAntihorario{false};
 bool estadoAnteriorSensorAntihorario{true}; // Começa em HIGH devido ao pull-up elétrico da placa
 bool flagTrava{true}; // Variável para decidir a trava solenoide
 
+bool travaEntrada = true;  
+bool travaSaida = false;
+bool travaDesempate = true; // true = trava emtrada, false = trava saída
+
 // Variáveis para o contador e debounce por software
 int contadorPressionamentos{};
 unsigned long tempoUltimoDebounce{};
-constexpr unsigned long DELAY_DEBOUNCE{5}; // 5ms é suficiente para filtragem mecânica
+constexpr unsigned long DELAY_DEBOUNCE{}; // 5ms é suficiente para filtragem mecânica
 
 // Inicializa o display LCD no endereço 0x27
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+void mensagemPadrao();
 void setup() {
   // Inicializa o I2C nos pinos PB7 (SDA) e PB6 (SCL)
   Wire.begin(PB7, PB6);
@@ -39,16 +44,20 @@ void setup() {
   pinMode(PINO_SOLENOIDE, OUTPUT_OPENDRAIN);
   pinMode(SENSOR_HORARIO, INPUT_PULLUP);
   pinMode(SENSOR_ANTIHORARIO, INPUT_PULLUP);
-
+  digitalWrite(PINO_SOLENOIDE, HIGH); // Garante que o solenoide comece desligado
   mensagemPadrao();
 }
 
 void solenoide(PinStatus estado) {
   // Aciona o solenoide enquanto sensor estiver cortado
   digitalWrite(PINO_SOLENOIDE, estado);
-  while (SENSOR_HORARIO == LOW || SENSOR_ANTIHORARIO == LOW);
-  digitalWrite(PINO_SOLENOIDE, LOW);
+  while (digitalRead(SENSOR_HORARIO) == LOW && digitalRead(SENSOR_ANTIHORARIO) == HIGH) ///// Trocar sentido quando adicionar sensor antihorário
+  {
+    ;
+  }
+  digitalWrite(PINO_SOLENOIDE, HIGH); 
 }
+
 
 void escreveDisplay(const char* linha1, const char* linha2) {
   lcd.clear();
@@ -59,7 +68,7 @@ void escreveDisplay(const char* linha1, const char* linha2) {
 }
 
 void mensagemPadrao() {
-  escreveDisplay("      Olá!      ", "   Bem-vindo");
+  escreveDisplay("     seja       ", "   Bem-vindo");
 }
 
 void leSensor(bool leitura) {
@@ -76,10 +85,10 @@ void leSensor(bool leitura) {
       estadoSensorHorario = leitura;
 
       // Detecta a borda de descida: o sensor mudou para LOW (foi cortado)
-      if (estadoSensorHorario == false && SENSOR_HORARIO == HIGH) { 
+      if (estadoSensorHorario == false && travaEntrada == true) { 
         if(flagTrava == true) {
           escreveDisplay(" ACESSO  NEGADO ", "                ");
-          solenoide(HIGH);
+          solenoide(LOW);
           mensagemPadrao();
 			  }
 		    else if(flagTrava == false) {
@@ -88,7 +97,7 @@ void leSensor(bool leitura) {
           mensagemPadrao();
 			  }        
       }
-      if (estadoSensorHorario == false && SENSOR_HORARIO == LOW) { 
+      if (estadoSensorHorario == false && travaEntrada == false) { 
 				  escreveDisplay("     Saindo     ", "");
           mensagemPadrao();
 			}        
