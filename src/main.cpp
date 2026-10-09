@@ -56,8 +56,7 @@ void setup() {
 }
 
 // Aciona o solenoide enquanto sensor estiver cortado
-void solenoide(PinStatus estado) {
-  digitalWrite(PINO_SOLENOIDE, estado);
+void loopSensores() {
   while (digitalRead(SENSOR_1) == LOW || digitalRead(SENSOR_2) == LOW) 
   {
     ;
@@ -99,54 +98,57 @@ void leSensor(bool leitura1, bool leitura2) {
       // Detecta a borda de descida: o sensor mudou para LOW (foi cortado)
       if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == LOW) { 
         if(digitalRead(flagTrava) == HIGH) {
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else {
 				  escreveDisplay("    Entrando    ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       }
       else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == LOW && digitalRead(TRAVA_ANTI_HORARIO) == HIGH) { 
 				  escreveDisplay("     Saindo     ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			} 
       else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == HIGH) { 
         if(digitalRead(flagTrava) == HIGH) {
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else {
 				  escreveDisplay("    Entrando    ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       } 
       else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == LOW) { 
         if(digitalRead(flagTrava) == HIGH) {
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else {
 				  escreveDisplay("     Saindo     ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       } 
       else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == LOW && digitalRead(TRAVA_ANTI_HORARIO) == LOW) { 
         if(digitalRead(TRAVA_DESEMPATE) == HIGH) {
           escreveDisplay("SEMPRE LIBERADO ", "    Entrando    ");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }
 		    else if(digitalRead(TRAVA_DESEMPATE) ==  LOW) {
 				  escreveDisplay("SEMPRE LIBERADO ", "     Saindo     ");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       }     
@@ -160,54 +162,57 @@ void leSensor(bool leitura1, bool leitura2) {
       // Detecta a borda de descida: o sensor mudou para LOW (foi cortado)
       if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == LOW) { 
         if(digitalRead(flagTrava) == HIGH) {
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else  {
 				  escreveDisplay("    Entrando    ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       }
-      if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == HIGH) { 
+      else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == HIGH) { 
 				  escreveDisplay("     Saindo     ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			}   
       else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == HIGH) { 
         if(digitalRead(flagTrava) == HIGH) { 
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else {
 				  escreveDisplay("     Saindo     ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       } 
       else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == LOW) { 
         if(digitalRead(flagTrava) == HIGH) {
+          digitalWrite(PINO_SOLENOIDE, LOW);
           escreveDisplay(" ACESSO  NEGADO ", "");
-          solenoide(LOW);
+          loopSensores();
           mensagemPadrao();
 			  }
-		    else if(digitalRead(flagTrava) == LOW) {
+		    else {
 				  escreveDisplay("    Entrando    ", "");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }        
       } 
-      if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == LOW) { 
+      else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == LOW) { 
         if(digitalRead(TRAVA_DESEMPATE) == LOW) {
           escreveDisplay("SEMPRE LIBERADO ", "    Entrando    ");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }
 		    else if(digitalRead(TRAVA_DESEMPATE) ==  HIGH) {
 				  escreveDisplay("SEMPRE LIBERADO ", "     Saindo     ");
-          solenoide(HIGH);
+          loopSensores();
           mensagemPadrao();
 			  }           
       }   
