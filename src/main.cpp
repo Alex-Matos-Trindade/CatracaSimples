@@ -3,19 +3,20 @@
 #include <LiquidCrystal_I2C.h>
 
 constexpr uint8_t PINO_SOLENOIDE = PC13; // Pino para o solenoide
-constexpr uint8_t SENSOR_HORARIO = PA0; 
-constexpr uint8_t SENSOR_ANTIHORARIO = PA1;
+constexpr uint8_t SENSOR_1 = PB0; 
+constexpr uint8_t SENSOR_2 = PB1;
 
-// Variáveis para controle do estado do botão
-bool estadoSensorHorario{false};
-bool estadoAnteriorSensorHorario{true}; // Começa em HIGH devido ao pull-up elétrico da placa
-bool estadoSensorAntihorario{false};
-bool estadoAnteriorSensorAntihorario{true}; // Começa em HIGH devido ao pull-up elétrico da placa
-bool flagTrava{true}; // Variável para decidir a trava solenoide
+// Variáveis para controle do estado do sensor
+bool estadoSensor1{false};
+bool estadoAnteriorSensor1{true}; 
+bool estadoSensor2{false};
+bool estadoAnteriorSensor2{true}; 
+//bool flagTrava{true}; // Variável para decidir a trava solenoide
 
-bool travaEntrada = true;  
-bool travaSaida = false;
-bool travaDesempate = true; // true = trava emtrada, false = trava saída
+constexpr uint8_t flagTrava = PA1;
+constexpr uint8_t TRAVA_HORARIO = PA7;  
+constexpr uint8_t TRAVA_ANTI_HORARIO = PA6;
+constexpr uint8_t TRAVA_DESEMPATE = PA5; // true = trava emtrada, false = trava saída
 
 // Variáveis para o contador e debounce por software
 int contadorPressionamentos{};
@@ -42,16 +43,22 @@ void setup() {
   delay(5000);
 
   pinMode(PINO_SOLENOIDE, OUTPUT_OPENDRAIN);
-  pinMode(SENSOR_HORARIO, INPUT_PULLUP);
-  pinMode(SENSOR_ANTIHORARIO, INPUT_PULLUP);
+  pinMode(SENSOR_1, INPUT_PULLUP);
+  pinMode(SENSOR_2, INPUT_PULLUP);
   digitalWrite(PINO_SOLENOIDE, HIGH); // Garante que o solenoide comece desligado
+
+  pinMode(flagTrava, INPUT);
+  pinMode(TRAVA_HORARIO, INPUT);
+  pinMode(TRAVA_ANTI_HORARIO, INPUT);
+  pinMode(TRAVA_DESEMPATE, INPUT);
+
   mensagemPadrao();
 }
 
+// Aciona o solenoide enquanto sensor estiver cortado
 void solenoide(PinStatus estado) {
-  // Aciona o solenoide enquanto sensor estiver cortado
   digitalWrite(PINO_SOLENOIDE, estado);
-  while (digitalRead(SENSOR_HORARIO) == LOW && digitalRead(SENSOR_ANTIHORARIO) == HIGH) ///// Trocar sentido quando adicionar sensor antihorário
+  while (digitalRead(SENSOR_1) == LOW || digitalRead(SENSOR_2) == LOW) 
   {
     ;
   }
@@ -68,46 +75,150 @@ void escreveDisplay(const char* linha1, const char* linha2) {
 }
 
 void mensagemPadrao() {
-  escreveDisplay("     seja       ", "   Bem-vindo");
+  escreveDisplay("    LION TEC    ", "CONTROLE ACESSO");
 }
 
-void leSensor(bool leitura) {
+void leSensor(bool leitura1, bool leitura2) {
 // 2. Se o estado mudou (por ruído ou clique), reseta o temporizador de debounce
-  if (leitura != estadoAnteriorSensorHorario) {
+  if (leitura1 != estadoAnteriorSensor1) {
+    tempoUltimoDebounce = millis();
+  }
+
+  if (leitura2 != estadoAnteriorSensor2) {
     tempoUltimoDebounce = millis();
   }
 
   // 3. Se passou tempo suficiente, a leitura física estabilizou
   if ((millis() - tempoUltimoDebounce) > DELAY_DEBOUNCE) {
     
+    ////////////////// SENDOR 1 ////////////////////////
     // Se o estado estabilizado for diferente do estado que tínhamos guardado
-    if (leitura != estadoSensorHorario) {
-      estadoSensorHorario = leitura;
+    if (leitura1 != estadoSensor1) {
+      estadoSensor1 = leitura1;
 
       // Detecta a borda de descida: o sensor mudou para LOW (foi cortado)
-      if (estadoSensorHorario == false && travaEntrada == true) { 
-        if(flagTrava == true) {
-          escreveDisplay(" ACESSO  NEGADO ", "                ");
+      if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == LOW) { 
+        if(digitalRead(flagTrava) == HIGH) {
+          escreveDisplay(" ACESSO  NEGADO ", "");
           solenoide(LOW);
           mensagemPadrao();
 			  }
-		    else if(flagTrava == false) {
-				  escreveDisplay("    Entrando    ", "                ");
-          solenoide(LOW);
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("    Entrando    ", "");
+          solenoide(HIGH);
           mensagemPadrao();
 			  }        
       }
-      if (estadoSensorHorario == false && travaEntrada == false) { 
+      else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == LOW && digitalRead(TRAVA_ANTI_HORARIO) == HIGH) { 
 				  escreveDisplay("     Saindo     ", "");
+          solenoide(HIGH);
           mensagemPadrao();
-			}        
+			} 
+      else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == HIGH) { 
+        if(digitalRead(flagTrava) == HIGH) {
+          escreveDisplay(" ACESSO  NEGADO ", "");
+          solenoide(LOW);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("    Entrando    ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      } 
+      else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == LOW) { 
+        if(digitalRead(flagTrava) == HIGH) {
+          escreveDisplay(" ACESSO  NEGADO ", "");
+          solenoide(LOW);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("     Saindo     ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      } 
+      else if (estadoSensor1 == false && digitalRead(TRAVA_HORARIO) == LOW && digitalRead(TRAVA_ANTI_HORARIO) == LOW) { 
+        if(digitalRead(TRAVA_DESEMPATE) == HIGH) {
+          escreveDisplay("SEMPRE LIBERADO ", "    Entrando    ");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(TRAVA_DESEMPATE) ==  LOW) {
+				  escreveDisplay("SEMPRE LIBERADO ", "     Saindo     ");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      }     
+    }
+
+    ////////////////// SENDOR 2 ////////////////////////
+    // Se o estado estabilizado for diferente do estado que tínhamos guardado
+    if (leitura2 != estadoSensor2) {
+      estadoSensor2 = leitura2;
+
+      // Detecta a borda de descida: o sensor mudou para LOW (foi cortado)
+      if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == LOW) { 
+        if(digitalRead(flagTrava) == HIGH) {
+          escreveDisplay(" ACESSO  NEGADO ", "");
+          solenoide(LOW);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("    Entrando    ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      }
+      if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == HIGH) { 
+				  escreveDisplay("     Saindo     ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			}   
+      else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == HIGH) { 
+        if(digitalRead(flagTrava) == HIGH) { 
+          escreveDisplay(" ACESSO  NEGADO ", "");
+          solenoide(LOW);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("     Saindo     ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      } 
+      else if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == HIGH && digitalRead(TRAVA_HORARIO) == HIGH && digitalRead(TRAVA_DESEMPATE) == LOW) { 
+        if(digitalRead(flagTrava) == HIGH) {
+          escreveDisplay(" ACESSO  NEGADO ", "");
+          solenoide(LOW);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(flagTrava) == LOW) {
+				  escreveDisplay("    Entrando    ", "");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }        
+      } 
+      if (estadoSensor2 == false && digitalRead(TRAVA_ANTI_HORARIO) == LOW && digitalRead(TRAVA_HORARIO) == LOW) { 
+        if(digitalRead(TRAVA_DESEMPATE) == LOW) {
+          escreveDisplay("SEMPRE LIBERADO ", "    Entrando    ");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }
+		    else if(digitalRead(TRAVA_DESEMPATE) ==  HIGH) {
+				  escreveDisplay("SEMPRE LIBERADO ", "     Saindo     ");
+          solenoide(HIGH);
+          mensagemPadrao();
+			  }           
+      }   
     }
   }
   // 4. Salva a leitura para o próximo ciclo do loop
-  estadoAnteriorSensorHorario = leitura;
+  estadoAnteriorSensor1 = leitura1;
+  estadoAnteriorSensor2 = leitura2;  
 }
 
 void loop() {
-  // 1. Lê o estado atual do botão
-  leSensor(digitalRead(SENSOR_HORARIO));
+  // 1. Lê o estado atual dos sensores
+  leSensor(digitalRead(SENSOR_1), digitalRead(SENSOR_2));
 }
