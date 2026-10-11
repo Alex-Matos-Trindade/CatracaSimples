@@ -81,65 +81,19 @@ void mensagemPadrao() {
 }
 
 void leSensor(bool leitura1, bool leitura2) {
-// 2. Se o estado mudou (por ruído ou clique), reseta o temporizador de debounce
-  if (leitura1 != estadoAnteriorSensor1) {
-    tempoUltimoDebounce = millis();
-  }
-
-  if (leitura2 != estadoAnteriorSensor2) {
-    tempoUltimoDebounce = millis();
-  }
-
-  // 3. Se passou tempo suficiente, a leitura física estabilizou
-  if ((millis() - tempoUltimoDebounce) > DELAY_DEBOUNCE) {
-    
-    ////////////////// SENDOR 1 ////////////////////////
-    // Se o estado estabilizado for diferente do estado que tínhamos guardado
-    if (leitura1 != estadoSensor1) {
-      estadoSensor1 = leitura1;
-      
-      if(leitura1 == false && digitalRead(GIRO_HORARIO) == Controlar && digitalRead(GIRO_ANTI_HORARIO)  == Controlar) {
-        if(digitalRead(flagTrava) == HIGH) {
-          digitalWrite(PINO_SOLENOIDE, LOW);
-          escreveDisplay(" ACESSO NEGADO", "");
-          loopSensores();
-          mensagemPadrao();
-        }  
-        else if (digitalRead(GIRO_DESEMPATE) == Controlar) {
-          escreveDisplay("    Entrando", "");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("     Saindo", "");
-          loopSensores();
-          mensagemPadrao();
-        }
-      }
-      else if(leitura1 == false && digitalRead(GIRO_HORARIO) == Liberar && digitalRead(GIRO_ANTI_HORARIO)  == Liberar) {
-        if(digitalRead(GIRO_DESEMPATE) == Controlar) {
-          escreveDisplay("SEMPRE LIVERADO", "    Entrando");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
-          loopSensores();
-          mensagemPadrao();
-        }   
-      }
-      else if (leitura1 == false && digitalRead(GIRO_HORARIO) == Controlar) {
-        if (digitalRead(flagTrava) == HIGH) {
-          digitalWrite(PINO_SOLENOIDE, LOW);
-          escreveDisplay(" ACESSO NEGADO", "");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("    Entrando", "");
-          loopSensores();
-          mensagemPadrao();
-        }         
+  ////////////////// SENDOR 1 ////////////////////////
+  if (leitura1 == LOW) {
+    if(leitura1 == false && digitalRead(GIRO_HORARIO) == Controlar && digitalRead(GIRO_ANTI_HORARIO)  == Controlar) {
+      if(digitalRead(flagTrava) == HIGH) {
+        digitalWrite(PINO_SOLENOIDE, LOW);
+        escreveDisplay(" ACESSO NEGADO", "");
+        loopSensores();
+        mensagemPadrao();
+      }  
+      else if (digitalRead(GIRO_DESEMPATE) == Controlar) {
+        escreveDisplay("    Entrando", "");
+        loopSensores();
+        mensagemPadrao();
       }
       else {
         escreveDisplay("     Saindo", "");
@@ -147,64 +101,88 @@ void leSensor(bool leitura1, bool leitura2) {
         mensagemPadrao();
       }
     }
-    ////////////////// SENDOR 2 ////////////////////////
-    // Se o estado estabilizado for diferente do estado que tínhamos guardado
-    if (leitura2 != estadoSensor2) {
-      estadoSensor2 = leitura2;
-        
-      if(leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Controlar && digitalRead(GIRO_HORARIO)  == Controlar) {
-        if(digitalRead(flagTrava) == HIGH) {
-          digitalWrite(PINO_SOLENOIDE, LOW);
-          escreveDisplay(" ACESSO NEGADO", "");
-          loopSensores();
-          mensagemPadrao();
-        }  
-        else if (digitalRead(GIRO_DESEMPATE) == Liberar) {
-          escreveDisplay("    Entrando", "");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("     Saindo", "");
-          loopSensores();
-          mensagemPadrao();
-        }
+    else if(leitura1 == false && digitalRead(GIRO_HORARIO) == Liberar && digitalRead(GIRO_ANTI_HORARIO)  == Liberar) {
+      if(digitalRead(GIRO_DESEMPATE) == Controlar) {
+        escreveDisplay("SEMPRE LIVERADO", "    Entrando");
+        loopSensores();
+        mensagemPadrao();
       }
-      else if(leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Liberar && digitalRead(GIRO_HORARIO)  == Liberar) {
-        if(digitalRead(GIRO_DESEMPATE) == Liberar) {
-          escreveDisplay("SEMPRE LIVERADO", "    Entrando");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
-          loopSensores();
-          mensagemPadrao();
-        }   
+      else {
+        escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
+        loopSensores();
+        mensagemPadrao();
+      }   
+    }
+    else if (leitura1 == false && digitalRead(GIRO_HORARIO) == Controlar) {
+      if (digitalRead(flagTrava) == HIGH) {
+        digitalWrite(PINO_SOLENOIDE, LOW);
+        escreveDisplay(" ACESSO NEGADO", "");
+        loopSensores();
+        mensagemPadrao();
       }
-      else if (leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Controlar) {
-        if (digitalRead(flagTrava) == HIGH) {
-          digitalWrite(PINO_SOLENOIDE, LOW);
-          escreveDisplay(" ACESSO NEGADO", "");
-          loopSensores();
-          mensagemPadrao();
-        }
-        else {
-          escreveDisplay("    Entrando", "");
-          loopSensores();
-          mensagemPadrao();
-        }         
+      else {
+        escreveDisplay("    Entrando", "");
+        loopSensores();
+        mensagemPadrao();
+      }         
+    }
+    else {
+      escreveDisplay("     Saindo", "");
+      loopSensores();
+      mensagemPadrao();
+    }
+  }
+  ////////////////// SENDOR 2 ////////////////////////
+  if (leitura2 == LOW) {
+    if(leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Controlar && digitalRead(GIRO_HORARIO)  == Controlar) {
+      if(digitalRead(flagTrava) == HIGH) {
+        digitalWrite(PINO_SOLENOIDE, LOW);
+        escreveDisplay(" ACESSO NEGADO", "");
+        loopSensores();
+        mensagemPadrao();
+      }  
+      else if (digitalRead(GIRO_DESEMPATE) == Liberar) {
+        escreveDisplay("    Entrando", "");
+        loopSensores();
+        mensagemPadrao();
       }
       else {
         escreveDisplay("     Saindo", "");
         loopSensores();
         mensagemPadrao();
-      }    
+      }
     }
-  }  
-  // 4. Salva a leitura para o próximo ciclo do loop
-  estadoAnteriorSensor1 = leitura1;
-  estadoAnteriorSensor2 = leitura2;  
+    else if(leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Liberar && digitalRead(GIRO_HORARIO)  == Liberar) {
+      if(digitalRead(GIRO_DESEMPATE) == Liberar) {
+        escreveDisplay("SEMPRE LIVERADO", "    Entrando");
+        loopSensores();
+        mensagemPadrao();
+      }
+      else {
+        escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
+        loopSensores();
+        mensagemPadrao();
+      }   
+    }
+    else if (leitura2 == false && digitalRead(GIRO_ANTI_HORARIO) == Controlar) {
+      if (digitalRead(flagTrava) == HIGH) {
+        digitalWrite(PINO_SOLENOIDE, LOW);
+        escreveDisplay(" ACESSO NEGADO", "");
+        loopSensores();
+        mensagemPadrao();
+      }
+      else {
+        escreveDisplay("    Entrando", "");
+        loopSensores();
+        mensagemPadrao();
+      }         
+    }
+    else {
+      escreveDisplay("     Saindo", "");
+      loopSensores();
+      mensagemPadrao();
+    }    
+  }     
 }
 
 void loop() {
