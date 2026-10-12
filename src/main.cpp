@@ -2,34 +2,78 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-const PinStatus& Controlar{HIGH};
-const PinStatus& Liberar{LOW};
+#define SOLENOIDE  PC13
+#define SENSOR_1  PB0
+#define SENSOR_2  PB1
 
-const char* msgPadraoL1{"    LION TEC    "};
-const char* msgPadraoL2{"CONTROLE ACESSO"};
+#define flagTrava  PA1
 
-namespace Pinos
-{
-  constexpr uint8_t PINO_SOLENOIDE = PC13; 
-  constexpr uint8_t SENSOR_1 = PB0; 
-  constexpr uint8_t SENSOR_2 = PB1;
+#define GIRO_HORARIO  PA7
+#define GIRO_ANTI_HORARIO  PA6
+#define GIRO_DESEMPATE  PA5
 
-  constexpr uint8_t flagTrava = PA1;
-  constexpr uint8_t GIRO_HORARIO = PA7;  
-  constexpr uint8_t GIRO_ANTI_HORARIO = PA6;
-  constexpr uint8_t GIRO_DESEMPATE = PA5; // true = trava horario, false = trava anti horario
-} 
+const char msgPadraoL1[17]{"    LION TEC    "};
+const char msgPadraoL2[17]{"CONTROLE ACESSO"};
 
-struct Giros {
-  PinStatus giroHorario{};
-  PinStatus giroAntiHorario{};
-  PinStatus giroDesempate{};
+class Sensores {
+private:
+  uint8_t m_solenoide{};
+  uint8_t m_sensor1{};
+  uint8_t m_sensor2{};
 
-  bool operator==(const PinStatus& status) {return *this == status;} 
+public:
+  Sensores(uint8_t solenoide, uint8_t sensor1, uint8_t sensor2)
+  : m_solenoide{solenoide}
+  , m_sensor1{sensor1}
+  , m_sensor2{sensor2}
+  {}
+
+  void inicializa() {
+    pinMode(m_solenoide, OUTPUT_OPENDRAIN);
+    pinMode(m_sensor1, INPUT_PULLUP);
+    pinMode(m_sensor2, INPUT_PULLUP);
+    digitalWrite(m_solenoide, HIGH);
+  }
+
+  void setSolenoide(PinStatus s) {return digitalWrite(m_solenoide, s);}
+  uint8_t getSensor1() {return static_cast<uint8_t>(digitalRead(m_sensor1));}
+  uint8_t getSensor2() {return static_cast<uint8_t>(digitalRead(m_sensor2));}
+};
+
+class ConfigGiro {
+private:
+  uint8_t m_horario{};
+  uint8_t m_antiHorario{};
+  uint8_t m_desempate{};
+  uint8_t m_flagTrava{};
+
+public:
+  ConfigGiro(uint8_t horario, uint8_t antiHorario, uint8_t desempate, uint8_t flag) 
+  : m_horario{static_cast<uint8_t>(digitalRead(horario))}
+  , m_antiHorario{static_cast<uint8_t>(digitalRead(antiHorario))}
+  , m_desempate{static_cast<uint8_t>(digitalRead(desempate))} 
+  , m_flagTrava{static_cast<uint8_t>(digitalRead(flag))}
+  {}
+
+  void inicializa() {
+    pinMode(m_horario, INPUT);
+    pinMode(m_antiHorario, INPUT);
+    pinMode(m_desempate, INPUT);
+  }
+
+  uint8_t getHorario() {return m_horario;}
+  uint8_t getAntiHorario() {return m_antiHorario;}
+  uint8_t getGiroDesempate() {return m_desempate;}
+  uint8_t getFlagTrava() {return m_flagTrava;}
+
+  //bool operator==(const PinStatus& status) {return *this == status;}
 };
 
 // Inicializa o display LCD no endereço 0x27
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+Sensores sensorStatus{SOLENOIDE, SENSOR_1, SENSOR_2};
+ConfigGiro conf{GIRO_HORARIO, GIRO_ANTI_HORARIO, GIRO_DESEMPATE, flagTrava};
 
 void escreveDisplay(const char* linha1, const char* linha2); // Declaração encaminhamento
 
@@ -48,23 +92,18 @@ void setup() {
   lcd.print("    Rev. 3.0    ");
   delay(5000);
 
-  pinMode(Pinos::PINO_SOLENOIDE, OUTPUT_OPENDRAIN);
-  pinMode(Pinos::SENSOR_1, INPUT_PULLUP);
-  pinMode(Pinos::SENSOR_2, INPUT_PULLUP);
-  digitalWrite(Pinos::PINO_SOLENOIDE, HIGH); // Garante que o solenoide comece desligado
+  pinMode(flagTrava, INPUT);
 
-  pinMode(Pinos::flagTrava, INPUT);
-  pinMode(Pinos::GIRO_HORARIO, INPUT);
-  pinMode(Pinos::GIRO_ANTI_HORARIO, INPUT);
-  pinMode(Pinos::GIRO_DESEMPATE, INPUT);
-
+  sensorStatus.inicializa();
+  conf.inicializa();
+  
   escreveDisplay(msgPadraoL1, msgPadraoL2);
 }
 
 // Aciona o solenoide enquanto sensor estiver cortado
 void loopSensores() {
-  while (digitalRead(Pinos::SENSOR_1) == LOW || digitalRead(Pinos::SENSOR_2) == LOW);
-  digitalWrite(Pinos::PINO_SOLENOIDE, HIGH); 
+  while (sensorStatus.getSensor1() == LOW || sensorStatus.getSensor2() == LOW);
+  sensorStatus.setSolenoide(HIGH); 
 }
 
 void escreveDisplay(const char* linha1, const char* linha2) {
@@ -75,35 +114,38 @@ void escreveDisplay(const char* linha1, const char* linha2) {
   lcd.print(linha2);
 }
 
-Giros giro{digitalRead(Pinos::GIRO_HORARIO), digitalRead(Pinos::GIRO_ANTI_HORARIO), digitalRead(Pinos::GIRO_DESEMPATE)};
+uint8_t giroHorario{conf.getHorario()};
+uint8_t giroAntiHorario{conf.getAntiHorario()};
+uint8_t giroDesempate{conf.getGiroDesempate()};
 
-void leSensor(PinStatus leitura1, PinStatus leitura2) {
-  PinStatus trava{digitalRead(Pinos::flagTrava)};
+
+void leSensor(uint8_t leitura1, uint8_t leitura2) {
+  uint8_t trava{conf.getFlagTrava()};
   ////////////////// SENDOR 1 ////////////////////////
-  if (leitura1 == LOW) {
-    if(giro.giroHorario == Controlar && giro.giroAntiHorario == Controlar) {
-      if(trava == HIGH) {
-        digitalWrite(Pinos::PINO_SOLENOIDE, LOW);
+  if (!leitura1) {
+    if(giroHorario && giroAntiHorario) {
+      if(trava) {
+        sensorStatus.setSolenoide(LOW);
         escreveDisplay(" ACESSO NEGADO", "");
       }  
-      else if (giro.giroDesempate == Controlar) {
+      else if (giroDesempate) {
         escreveDisplay("    Entrando", "");
       }
       else {
         escreveDisplay("     Saindo", "");
       }
     }
-    else if(giro.giroHorario == Liberar && giro.giroAntiHorario == Liberar) {
-      if(giro.giroDesempate == Controlar) {
+    else if(!giroHorario && !giroAntiHorario) {
+      if(giroDesempate) {
         escreveDisplay("SEMPRE LIBERADO", "    Entrando");
       }
       else {
         escreveDisplay("SEMPRE LIBERADO", "     Saindo"); 
       }   
     }
-    else if (giro.giroHorario == Controlar) {
-      if (trava == HIGH) {
-        digitalWrite(Pinos::PINO_SOLENOIDE, LOW);
+    else if (giroHorario) {
+      if (trava) {
+        sensorStatus.setSolenoide(LOW);
         escreveDisplay(" ACESSO NEGADO", "");
       }
       else {
@@ -118,30 +160,30 @@ void leSensor(PinStatus leitura1, PinStatus leitura2) {
     escreveDisplay(msgPadraoL1, msgPadraoL2);
   }
   ////////////////// SENDOR 2 ////////////////////////
-  if (leitura2 == LOW) {
-    if(giro.giroAntiHorario == Controlar && giro.giroHorario == Controlar) {
+  if (!leitura2) {
+    if(giroAntiHorario && giroHorario) {
       if(trava == HIGH) {
-        digitalWrite(Pinos::PINO_SOLENOIDE, LOW);
+        sensorStatus.setSolenoide(LOW);
         escreveDisplay(" ACESSO NEGADO", "");
       }  
-      else if (giro.giroDesempate == Liberar) {
+      else if (!giroDesempate) {
         escreveDisplay("    Entrando", "");
       }
       else {
         escreveDisplay("     Saindo", "");
       }
     }
-    else if(giro.giroAntiHorario == Liberar && giro.giroHorario == Liberar) {
-      if(giro.giroDesempate == Liberar) {
-        escreveDisplay("SEMPRE LIVERADO", "    Entrando");
+    else if(!giroAntiHorario  && !giroHorario) {
+      if(!giroDesempate) {
+        escreveDisplay("SEMPRE LIBERADO", "    Entrando");
       }
       else {
-        escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
+        escreveDisplay("SEMPRE LIBERADO", "     Saindo"); 
       }   
     }
-    else if (giro.giroAntiHorario == Controlar) {
-      if (trava == HIGH) {
-        digitalWrite(Pinos::PINO_SOLENOIDE, LOW);
+    else if (giroAntiHorario) {
+      if (trava) {
+        sensorStatus.setSolenoide(LOW);
         escreveDisplay(" ACESSO NEGADO", "");
       }
       else {
@@ -159,5 +201,5 @@ void leSensor(PinStatus leitura1, PinStatus leitura2) {
 
 void loop() {
   // 1. Lê o estado atual dos sensores
-  leSensor(digitalRead(Pinos::SENSOR_1), digitalRead(Pinos::SENSOR_2)); 
+  leSensor(sensorStatus.getSensor1(), sensorStatus.getSensor2()); 
 }
