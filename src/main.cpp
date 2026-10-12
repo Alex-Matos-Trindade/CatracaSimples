@@ -95,10 +95,10 @@ void leSensor(PinStatus leitura1, PinStatus leitura2) {
     }
     else if(giro.giroHorario == Liberar && giro.giroAntiHorario == Liberar) {
       if(giro.giroDesempate == Controlar) {
-        escreveDisplay("SEMPRE LIVERADO", "    Entrando");
+        escreveDisplay("SEMPRE LIBERADO", "    Entrando");
       }
       else {
-        escreveDisplay("SEMPRE LIVERADO", "     Saindo"); 
+        escreveDisplay("SEMPRE LIBERADO", "     Saindo"); 
       }   
     }
     else if (giro.giroHorario == Controlar) {
@@ -131,7 +131,7 @@ void leSensor(PinStatus leitura1, PinStatus leitura2) {
         escreveDisplay("     Saindo", "");
       }
     }
-    else if(giro.giroAntiHorario == Liberar && giro.giroAntiHorario == Liberar) {
+    else if(giro.giroAntiHorario == Liberar && giro.giroHorario == Liberar) {
       if(giro.giroDesempate == Liberar) {
         escreveDisplay("SEMPRE LIVERADO", "    Entrando");
       }
